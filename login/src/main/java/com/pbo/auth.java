@@ -1,6 +1,7 @@
 package com.pbo;
 
-import com.pbo.model.key;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import javafx.fxml.FXML;
 import javafx.event.Event;
@@ -12,6 +13,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import com.pbo.model.conn;
+import com.pbo.model.key;
 
 public class auth {
 
@@ -81,9 +84,81 @@ public class auth {
         }
     }
 
-    private void register(Event e) {}
+    private void register(Event e) {
 
-    private void validate(Event e) {}
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("Informasi");
+        
+        if (!check()) {
+            try {
+                conn.open();
+                ResultSet rs = conn.select("select * from akun where userid = '" + tUserReg.getText() + "' and pass = '"
+                        + tPassReg.getText() + "'");
+    
+                if (!rs.next()) {
+                    conn.update("INSERT INTO akun(userid, pass, nama, email, status) value('" + tUserReg.getText() + "', '"
+                            + tPassReg.getText() + "', '" + tNamaReg.getText() + "', '" + tEmailReg.getText()
+                            + "', 'pembeli')");
+                    alert.setContentText("Register berhasil!");
+                    alert.showAndWait();
+                    clearAfterReg();
+                    focus();
+                    conn.close();
+                } else {
+                    conn.close();
+                    alert.setContentText("Username sudah ada! gunakan yang lain!");
+                    alert.showAndWait();
+                    focus();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private void validate(Event e) {
+
+        try {
+            conn.open();
+            ResultSet rs = conn.select("SELECT * FROM akun WHERE userid = '" + tUserLog.getText() + "' and pass = '"
+                    + tPassLog.getText() + "'");
+
+            if (rs.next()) {
+                String status = rs.getString("status");
+                conn.close();
+
+                Alert alert = new Alert(AlertType.INFORMATION);
+                alert.setTitle("Informasi");
+
+                if (status.equals("admin")) {
+                    tPassLog.clear();
+                    alert.setContentText("Berhasil Login Sebagai Admin!");
+                    alert.showAndWait();
+                } else if (status.equals("manager")) {
+                    tPassLog.clear();
+                    alert.setContentText("Berhasil Login Sebagai Manager!");
+                    alert.showAndWait();
+                } else if (status.equals("staff")) {
+                    tPassLog.clear();
+                    alert.setContentText("Berhasil Login Sebagai Staff!");
+                    alert.showAndWait();
+                } else {
+                    tPassLog.clear();
+                    alert.setContentText("Berhasil Login Sebagai Pembeli!");
+                    alert.showAndWait();
+                }
+            } else {
+                conn.close();
+                Alert alert = new Alert(AlertType.INFORMATION);
+                alert.setTitle("Informasi");
+                alert.setContentText("Username atau password salah!");
+                alert.showAndWait();
+                focus();
+            }
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+    }
 
     private void focus() {
 
@@ -92,6 +167,14 @@ public class auth {
         } else {
             key.focus(tUserReg);;
         }
+    }
+
+    private void clearAfterReg() {
+
+        tUserReg.clear();
+        tPassReg.clear();
+        tNamaReg.clear();
+        tEmailReg.clear();
     }
 
     protected Boolean check() {
